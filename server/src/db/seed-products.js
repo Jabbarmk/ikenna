@@ -31,6 +31,10 @@ async function seed() {
       );
       inserted += 1;
     } catch (err) {
+      if (err.code === 'ER_ACCESS_DENIED_ERROR' || err.code === 'ECONNREFUSED' || err.code === 'ER_BAD_DB_ERROR') {
+        console.error(`Stopping: connection/credentials error — ${err.message}`);
+        throw err;
+      }
       console.error(`Failed row code=${code}:`, err.message);
       skipped += 1;
     }
