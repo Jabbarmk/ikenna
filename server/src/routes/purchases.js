@@ -148,6 +148,12 @@ router.post('/:id/cancel', asyncHandler(async (req, res) => {
       await conn.rollback();
       return res.status(400).json({ error: 'Already cancelled' });
     }
+    if (Number(purchase.paid_amount) > 0) {
+      await conn.rollback();
+      return res.status(400).json({
+        error: `This purchase has AED ${purchase.paid_amount} in recorded payments. Delete or refund the payment(s) in Accounts before cancelling.`,
+      });
+    }
     if (purchase.status === 'received') {
       const [items] = await conn.query('SELECT * FROM purchase_items WHERE purchase_id = ?', [req.params.id]);
       for (const it of items) {

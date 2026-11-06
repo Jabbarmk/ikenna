@@ -126,6 +126,12 @@ router.post('/:id/cancel', asyncHandler(async (req, res) => {
       await conn.rollback();
       return res.status(400).json({ error: 'Already cancelled' });
     }
+    if (Number(invoice.paid_amount) > 0) {
+      await conn.rollback();
+      return res.status(400).json({
+        error: `This invoice has AED ${invoice.paid_amount} in recorded payments. Delete or refund the payment(s) in Accounts before cancelling.`,
+      });
+    }
     const [items] = await conn.query('SELECT * FROM sales_invoice_items WHERE invoice_id = ?', [req.params.id]);
     for (const it of items) {
       if (!it.product_id) continue;

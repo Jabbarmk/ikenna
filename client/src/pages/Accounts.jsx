@@ -3,7 +3,8 @@ import { api } from '../api/client';
 import PageHeader from '../components/PageHeader';
 import DataTable from '../components/DataTable';
 import StatCard from '../components/StatCard';
-import { Badge, Tabs } from '../components/ui';
+import { Badge, Button, Tabs } from '../components/ui';
+import { useToast } from '../context/ToastContext';
 import { money, formatDate } from '../utils/format';
 
 const TABS = [
@@ -13,24 +14,42 @@ const TABS = [
 ];
 
 export default function Accounts() {
+  const toast = useToast();
   const [tab, setTab] = useState('receivables');
   const [receivables, setReceivables] = useState([]);
   const [payables, setPayables] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  async function load() {
     setLoading(true);
-    Promise.all([
-      api.get('/accounts/receivables'),
-      api.get('/accounts/payables'),
-      api.get('/accounts/payments'),
-    ]).then(([r, p, pay]) => {
+    try {
+      const [r, p, pay] = await Promise.all([
+        api.get('/accounts/receivables'),
+        api.get('/accounts/payables'),
+        api.get('/accounts/payments'),
+      ]);
       setReceivables(r);
       setPayables(p);
       setPayments(pay);
-    }).finally(() => setLoading(false));
-  }, []);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function handleDeletePayment(payment) {
+    const refLabel = payment.ref_type === 'sales_invoice' ? 'invoice' : payment.ref_type === 'purchase' ? 'purchase' : 'record';
+    if (!window.confirm(`Delete this AED ${money(payment.amount)} payment? This will reverse it from the linked ${refLabel}'s paid amount.`)) return;
+    try {
+      await api.delete(`/accounts/payments/${payment.id}`);
+      toast.success('Payment deleted');
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
 
   const totalReceivable = receivables.reduce((s, r) => s + Number(r.balance), 0);
   const totalPayable = payables.reduce((s, r) => s + Number(r.balance), 0);
@@ -58,6 +77,11 @@ export default function Accounts() {
     { key: 'amount', header: 'Amount', render: (r) => money(r.amount) },
     { key: 'method', header: 'Method' },
     { key: 'notes', header: 'Notes' },
+    {
+      key: 'actions', header: '', render: (r) => (
+        <Button size="sm" variant="danger" onClick={() => handleDeletePayment(r)}>Delete</Button>
+      ),
+    },
   ];
 
   return (
