@@ -31,7 +31,7 @@ export default function AppShell() {
             )}
             <div>
               <div className="text-lg font-bold leading-tight text-slate-900 sm:text-xl">{title}</div>
-              <div className="hidden text-sm font-medium text-slate-400 sm:block">Ikenna Kamal General Trading L.L.C.</div>
+              <div className="hidden text-base font-bold text-black sm:block">Ikenna Kamal General Trading L.L.C.</div>
             </div>
           </div>
 
