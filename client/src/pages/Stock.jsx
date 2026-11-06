@@ -24,6 +24,7 @@ export default function Stock() {
   const [adjustTarget, setAdjustTarget] = useState(null);
   const [adjustQty, setAdjustQty] = useState('');
   const [adjustNote, setAdjustNote] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   const pageSize = 50;
 
@@ -90,6 +91,17 @@ export default function Stock() {
     }
   }
 
+  async function handleExport() {
+    setExporting(true);
+    try {
+      await api.download('/products/export', { q, lowStock: lowStock ? 'true' : undefined });
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const columns = [
     { key: 'code', header: 'Code' },
     { key: 'description', header: 'Description' },
@@ -115,7 +127,14 @@ export default function Stock() {
       <PageHeader
         title="Stock"
         subtitle={`${total} products in catalog`}
-        actions={<Button onClick={openNew}><Icon name="plus" className="h-4 w-4" /> New Product</Button>}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={handleExport} disabled={exporting}>
+              <Icon name="download" className="h-4 w-4" /> {exporting ? 'Exporting…' : 'Export to Excel'}
+            </Button>
+            <Button onClick={openNew}><Icon name="plus" className="h-4 w-4" /> New Product</Button>
+          </div>
+        }
       />
 
       <div className="mb-3.5 flex flex-wrap items-center gap-3.5">

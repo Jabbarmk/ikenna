@@ -1,10 +1,59 @@
 const express = require('express');
+const xlsx = require('xlsx');
 const pool = require('../db/pool');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 router.use(requireAuth);
+
+router.get('/export', asyncHandler(async (req, res) => {
+  const { q, lowStock } = req.query;
+  const where = ['is_active = 1'];
+  const params = [];
+
+  if (q) {
+    where.push('(code LIKE ? OR description LIKE ?)');
+    params.push(`%${q}%`, `%${q}%`);
+  }
+  if (lowStock === 'true') {
+    where.push('qty_on_hand <= reorder_level');
+  }
+
+  const [rows] = await pool.query(
+    `SELECT code, description, unit, category, qty_on_hand, reorder_level, cost_price, sale_price,
+            (qty_on_hand * cost_price) AS stock_value
+     FROM products WHERE ${where.join(' AND ')} ORDER BY description`,
+    params
+  );
+
+  const data = rows.map((r) => ({
+    'Code': r.code,
+    'Description': r.description,
+    'Unit': r.unit,
+    'Category': r.category || '',
+    'Qty on Hand': Number(r.qty_on_hand),
+    'Reorder Level': Number(r.reorder_level),
+    'Cost Price': Number(r.cost_price),
+    'Sale Price': Number(r.sale_price),
+    'Stock Value': Number(r.stock_value),
+  }));
+
+  const ws = xlsx.utils.json_to_sheet(data);
+  ws['!cols'] = [
+    { wch: 14 }, { wch: 42 }, { wch: 8 }, { wch: 16 },
+    { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
+  ];
+  const wb = xlsx.utils.book_new();
+  xlsx.utils.book_append_sheet(wb, ws, 'Stock');
+
+  const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  const filename = `stock-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(buffer);
+}));
 
 router.get('/', asyncHandler(async (req, res) => {
   const { q, lowStock, page = 1, pageSize = 50 } = req.query;

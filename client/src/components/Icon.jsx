@@ -28,6 +28,7 @@ const PATHS = {
   arrowRight: 'M5 12h14M13 6l6 6-6 6',
   eye: 'M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
   eyeOff: 'M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.9 5.1A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a13.2 13.2 0 0 1-3.1 3.6M6.1 6.1C3.4 7.9 1 12 1 12a13.1 13.1 0 0 0 5 5.3',
+  download: 'M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2',
 };
 
 export default function Icon({ name, className = 'w-5 h-5', strokeWidth = 1.8 }) {
