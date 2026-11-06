@@ -10,8 +10,26 @@ import { money, formatDate } from '../utils/format';
 
 const QUICK_ACCESS = ['/sales', '/stock', '/quotations', '/purchases'];
 
-function QuickAccessCard({ module, stat }) {
+function QuickAccessCard({ module, stat, featured }) {
   const navigate = useNavigate();
+
+  if (featured) {
+    return (
+      <button
+        onClick={() => navigate(module.to)}
+        className="group flex min-w-[170px] flex-1 flex-col items-start gap-4 rounded-2xl bg-[#2E6BFF] p-4 text-left shadow-md shadow-blue-200 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+      >
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 text-white">
+          <Icon name={module.icon} className="h-5 w-5" strokeWidth={1.7} />
+        </span>
+        <div>
+          <div className="text-sm font-semibold text-white">{module.label}</div>
+          <div className="mt-0.5 text-xs text-blue-100">{stat}</div>
+        </div>
+      </button>
+    );
+  }
+
   return (
     <button
       onClick={() => navigate(module.to)}
@@ -119,17 +137,17 @@ export default function Dashboard() {
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_340px]">
       {/* ===== Main content ===== */}
       <div className="min-w-0">
-        <div className="mb-5">
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Welcome back, {user?.name?.split(' ')[0] || 'there'} 👋</h1>
-          <p className="mt-0.5 text-sm text-slate-500">Here's what's happening with your business today</p>
+        <div className="mb-5 overflow-hidden rounded-2xl bg-gradient-to-r from-[#2E6BFF] to-[#5B8CFF] px-6 py-6 sm:px-7 sm:py-7">
+          <h1 className="text-xl font-bold text-white sm:text-2xl">Welcome back, {user?.name?.split(' ')[0] || 'there'} 👋</h1>
+          <p className="mt-0.5 text-sm text-blue-100">Here's what's happening with your business today</p>
         </div>
 
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Quick Access</h2>
         </div>
         <div className="flex flex-wrap gap-3.5">
-          {quickModules.map((m) => (
-            <QuickAccessCard key={m.to} module={m} stat={quickStats[m.to]} />
+          {quickModules.map((m, idx) => (
+            <QuickAccessCard key={m.to} module={m} stat={quickStats[m.to]} featured={idx === 0} />
           ))}
         </div>
 
