@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS company_settings (
   phone VARCHAR(100) DEFAULT '+971555265418',
   email VARCHAR(160) DEFAULT 'lowiskata4real2007@yahoo.com',
   po_box VARCHAR(40) DEFAULT '377977',
+  peppol_id VARCHAR(60) DEFAULT '0235:1006082182',
   vat_rate DECIMAL(5,2) NOT NULL DEFAULT 5.00,
   quote_next INT NOT NULL DEFAULT 1,
   purchase_next INT NOT NULL DEFAULT 1,

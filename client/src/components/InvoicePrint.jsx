@@ -14,6 +14,7 @@ export default function InvoicePrint({ settings, docType, docNo, docDate, party,
         <div className="invoice-meta">
           <div className="invoice-title">{docType}</div>
           <div className="invoice-trn">TRN: {settings?.trn || '100608218200003'}</div>
+          <div className="invoice-trn">Peppol ID: {settings?.peppol_id || '0235:1006082182'}</div>
           <div className="invoice-no">No: {docNo}</div>
           <div className="invoice-date">Date: {formatDate(docDate)}</div>
         </div>

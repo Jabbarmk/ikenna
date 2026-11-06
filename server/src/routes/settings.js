@@ -12,10 +12,10 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 router.put('/', asyncHandler(async (req, res) => {
-  const { name, trn, address, phone, email, po_box, vat_rate } = req.body;
+  const { name, trn, address, phone, email, po_box, peppol_id, vat_rate } = req.body;
   await pool.query(
-    `UPDATE company_settings SET name=?, trn=?, address=?, phone=?, email=?, po_box=?, vat_rate=? WHERE id = 1`,
-    [name, trn, address, phone, email, po_box, vat_rate]
+    `UPDATE company_settings SET name=?, trn=?, address=?, phone=?, email=?, po_box=?, peppol_id=?, vat_rate=? WHERE id = 1`,
+    [name, trn, address, phone, email, po_box, peppol_id, vat_rate]
   );
   res.json({ ok: true });
 }));

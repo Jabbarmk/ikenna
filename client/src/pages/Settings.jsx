@@ -32,6 +32,7 @@ export default function Settings() {
           <FormGrid>
             <Field label="Company Name" full><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
             <Field label="TRN"><Input value={form.trn || ''} onChange={(e) => setForm({ ...form, trn: e.target.value })} /></Field>
+            <Field label="Peppol ID"><Input value={form.peppol_id || ''} onChange={(e) => setForm({ ...form, peppol_id: e.target.value })} placeholder="0235:1006082182" /></Field>
             <Field label="VAT Rate (%)"><Input type="number" step="0.01" value={form.vat_rate} onChange={(e) => setForm({ ...form, vat_rate: e.target.value })} /></Field>
             <Field label="Phone"><Input value={form.phone || ''} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
             <Field label="Email"><Input value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
