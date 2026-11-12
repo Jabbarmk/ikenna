@@ -6,11 +6,12 @@ import ClientSearchInput from '../components/ClientSearchInput';
 import LineItemsEditor from '../components/LineItemsEditor';
 import InvoicePrint from '../components/InvoicePrint';
 import Icon from '../components/Icon';
-import { Button, Field, FormGrid, Input, Panel, Select, Textarea } from '../components/ui';
+import { Badge, Button, Field, FormGrid, Input, Panel, Select, Textarea } from '../components/ui';
 import { useToast } from '../context/ToastContext';
-import { today } from '../utils/format';
+import { today, formatDate, money } from '../utils/format';
 
 const EMPTY_ITEM = { product_id: null, description: '', qty: 1, unit_price: 0 };
+const EDITABLE_STATUSES = ['draft', 'sent'];
 
 export default function QuotationForm() {
   const { id } = useParams();
@@ -25,22 +26,28 @@ export default function QuotationForm() {
   const [items, setItems] = useState([{ ...EMPTY_ITEM }]);
   const [existing, setExisting] = useState(null);
   const [settings, setSettings] = useState(null);
+  const [editMode, setEditMode] = useState(isNew);
 
   useEffect(() => {
     api.get('/settings').then(setSettings).catch(() => {});
   }, []);
 
+  function populateFormFromExisting(data) {
+    setClient({ id: data.client_id, name: data.client_name });
+    setQuoteDate(data.quote_date?.slice(0, 10));
+    setValidUntil(data.valid_until ? data.valid_until.slice(0, 10) : '');
+    setNotes(data.notes || '');
+    setItems(data.items.map((it) => ({ product_id: it.product_id, description: it.description, qty: it.qty, unit_price: it.unit_price })));
+  }
+
+  async function loadExisting() {
+    const data = await api.get(`/quotations/${id}`);
+    setExisting(data);
+    populateFormFromExisting(data);
+  }
+
   useEffect(() => {
-    if (!isNew) {
-      api.get(`/quotations/${id}`).then((data) => {
-        setExisting(data);
-        setClient({ id: data.client_id, name: data.client_name });
-        setQuoteDate(data.quote_date?.slice(0, 10));
-        setValidUntil(data.valid_until ? data.valid_until.slice(0, 10) : '');
-        setNotes(data.notes || '');
-        setItems(data.items.map((it) => ({ product_id: it.product_id, description: it.description, qty: it.qty, unit_price: it.unit_price })));
-      }).catch((err) => toast.error(err.message));
-    }
+    if (!isNew) loadExisting().catch((err) => toast.error(err.message));
   }, [id]);
 
   async function handleSave(e) {
@@ -58,7 +65,8 @@ export default function QuotationForm() {
       } else {
         await api.put(`/quotations/${id}`, payload);
         toast.success('Quotation updated');
-        navigate(`/quotations/${id}`);
+        setEditMode(false);
+        loadExisting();
       }
     } catch (err) {
       toast.error(err.message);
@@ -85,29 +93,20 @@ export default function QuotationForm() {
     }
   }
 
-  return (
-    <div>
-      <div className="no-print">
-        <PageHeader
-          title={isNew ? 'New Quotation' : `Quotation ${existing?.quote_no || ''}`}
-          subtitle={existing ? `Status: ${existing.status}` : 'Create a price quote for a client'}
-          actions={!isNew && existing ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {existing.status !== 'accepted' && (
-                <Select className="w-auto" value={existing.status} onChange={(e) => handleStatusChange(e.target.value)}>
-                  {['draft', 'sent', 'accepted', 'rejected', 'expired'].map((s) => <option key={s} value={s}>{s}</option>)}
-                </Select>
-              )}
-              {existing.status !== 'accepted' && (
-                <Button variant="secondary" onClick={handleConvert}>Convert to Invoice</Button>
-              )}
-              <Button variant="ghost" onClick={() => window.print()}>Print</Button>
-            </div>
-          ) : null}
-        />
-      </div>
+  function cancelEdit() {
+    if (existing) {
+      populateFormFromExisting(existing);
+      setEditMode(false);
+    } else {
+      navigate('/quotations');
+    }
+  }
 
-      <div className="no-print">
+  // ===== New quotation: always the editable form =====
+  if (isNew) {
+    return (
+      <div>
+        <PageHeader title="New Quotation" subtitle="Create a price quote for a client" />
         <Panel>
           <form onSubmit={handleSave}>
             <FormGrid wide>
@@ -125,28 +124,108 @@ export default function QuotationForm() {
 
             <div className="mt-5 flex justify-end gap-2.5">
               <Button type="button" variant="ghost" onClick={() => navigate('/quotations')}>Cancel</Button>
-              <Button type="submit"><Icon name="check" className="h-4 w-4" /> {isNew ? 'Create Quotation' : 'Save Changes'}</Button>
+              <Button type="submit"><Icon name="check" className="h-4 w-4" /> Create Quotation</Button>
             </div>
           </form>
         </Panel>
       </div>
+    );
+  }
 
-      {!isNew && existing && (
-        <Panel className="print:border-0 print:p-0 print:shadow-none">
-          <InvoicePrint
-            settings={settings}
-            docType="QUOTATION"
-            docNo={existing.quote_no}
-            docDate={existing.quote_date}
-            party={{ name: existing.client_name, company: existing.client_company, address: existing.client_address, phone: existing.client_phone, trn: existing.client_trn }}
-            items={existing.items}
-            subtotal={existing.subtotal}
-            vatAmount={existing.vat_amount}
-            total={existing.total}
-            extraNote={existing.valid_until ? `Valid until: ${existing.valid_until.slice(0, 10)}` : undefined}
-          />
+  if (!existing) return <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500">Loading…</div>;
+
+  const canEdit = EDITABLE_STATUSES.includes(existing.status);
+
+  // ===== Existing quotation: edit mode =====
+  if (editMode) {
+    return (
+      <div>
+        <PageHeader title={`Edit Quotation ${existing.quote_no}`} subtitle="Update client, dates, notes or line items" />
+        <Panel>
+          <form onSubmit={handleSave}>
+            <FormGrid wide>
+              <Field label="Client *">
+                <ClientSearchInput value={client?.name} onSelect={setClient} />
+              </Field>
+              <Field label="Quote Date *"><Input type="date" required value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} /></Field>
+              <Field label="Valid Until"><Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></Field>
+              <Field label="Notes" full><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
+            </FormGrid>
+
+            <div className="mt-5">
+              <LineItemsEditor items={items} onChange={setItems} />
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2.5">
+              <Button type="button" variant="ghost" onClick={cancelEdit}>Cancel</Button>
+              <Button type="submit"><Icon name="check" className="h-4 w-4" /> Save Changes</Button>
+            </div>
+          </form>
         </Panel>
-      )}
+      </div>
+    );
+  }
+
+  // ===== Existing quotation: view mode (default) =====
+  return (
+    <div>
+      <div className="no-print">
+        <PageHeader
+          title={`Quotation ${existing.quote_no}`}
+          subtitle={`${existing.client_name} · ${formatDate(existing.quote_date)}`}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge value={existing.status} />
+              {existing.status !== 'accepted' && (
+                <Select className="w-auto" value={existing.status} onChange={(e) => handleStatusChange(e.target.value)}>
+                  {['draft', 'sent', 'accepted', 'rejected', 'expired'].map((s) => <option key={s} value={s}>{s}</option>)}
+                </Select>
+              )}
+              {canEdit && (
+                <Button variant="secondary" onClick={() => setEditMode(true)}><Icon name="edit" className="h-4 w-4" /> Edit</Button>
+              )}
+              {existing.status !== 'accepted' && (
+                <Button variant="secondary" onClick={handleConvert}>Convert to Invoice</Button>
+              )}
+              <Button variant="ghost" onClick={() => window.print()}><Icon name="download" className="h-4 w-4" /> Print</Button>
+            </div>
+          }
+        />
+      </div>
+
+      <div className="no-print mb-5 grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="text-xs font-medium text-slate-500">Client</div>
+          <div className="mt-1 truncate text-sm font-semibold text-slate-800">{existing.client_name}</div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="text-xs font-medium text-slate-500">Quote Date</div>
+          <div className="mt-1 text-sm font-semibold text-slate-800">{formatDate(existing.quote_date)}</div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="text-xs font-medium text-slate-500">Valid Until</div>
+          <div className="mt-1 text-sm font-semibold text-slate-800">{existing.valid_until ? formatDate(existing.valid_until) : '—'}</div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="text-xs font-medium text-slate-500">Total Value</div>
+          <div className="mt-1 text-sm font-bold text-brand-600">AED {money(existing.total)}</div>
+        </div>
+      </div>
+
+      <Panel className="print:border-0 print:p-0 print:shadow-none">
+        <InvoicePrint
+          settings={settings}
+          docType="QUOTATION"
+          docNo={existing.quote_no}
+          docDate={existing.quote_date}
+          party={{ name: existing.client_name, company: existing.client_company, address: existing.client_address, phone: existing.client_phone, trn: existing.client_trn }}
+          items={existing.items}
+          subtotal={existing.subtotal}
+          vatAmount={existing.vat_amount}
+          total={existing.total}
+          extraNote={existing.valid_until ? `Valid until: ${formatDate(existing.valid_until)}` : undefined}
+        />
+      </Panel>
     </div>
   );
 }
