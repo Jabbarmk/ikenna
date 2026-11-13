@@ -5,6 +5,7 @@ export default function InvoicePrint({ settings, docType, docNo, docDate, party,
     <div className="invoice-print">
       <div className="invoice-header">
         <div className="invoice-company">
+          {settings?.logo && <img src={settings.logo} alt="Company logo" className="invoice-logo" />}
           <div className="invoice-company-name">{settings?.name || 'IKENNA KAMAL GENERAL TRADING L.L.C.'}</div>
           <div className="invoice-company-line">Mob: {settings?.phone || '+971555265418'}</div>
           <div className="invoice-company-line">Email: {settings?.email || 'lowiskata4real2007@yahoo.com'}</div>

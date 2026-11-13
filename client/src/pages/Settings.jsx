@@ -140,6 +140,51 @@ function TermsTemplates() {
   );
 }
 
+const MAX_LOGO_BYTES = 500 * 1024;
+
+function LogoField({ value, onChange }) {
+  const toast = useToast();
+
+  function handleFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > MAX_LOGO_BYTES) {
+      toast.error('Logo must be 500KB or smaller. Please compress or resize the image.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => onChange(reader.result);
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <Field label="Company Logo" full>
+      <div className="flex items-center gap-4">
+        <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+          {value ? (
+            <img src={value} alt="Company logo" className="h-full w-full object-contain" />
+          ) : (
+            <span className="text-[10px] text-slate-400">No logo</span>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="inline-flex min-h-9 w-fit cursor-pointer items-center justify-center rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-100">
+            Upload Logo
+            <input type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden" onChange={handleFile} />
+          </label>
+          {value && (
+            <button type="button" onClick={() => onChange(null)} className="text-left text-xs font-semibold text-rose-600 hover:underline">
+              Remove logo
+            </button>
+          )}
+          <span className="text-[11px] text-slate-400">PNG, JPG, SVG or WebP, up to 500KB.</span>
+        </div>
+      </div>
+    </Field>
+  );
+}
+
 export default function Settings() {
   const toast = useToast();
   const [form, setForm] = useState(null);
@@ -166,6 +211,7 @@ export default function Settings() {
       <Panel>
         <form onSubmit={handleSave}>
           <FormGrid>
+            <LogoField value={form.logo} onChange={(logo) => setForm({ ...form, logo })} />
             <Field label="Company Name" full><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
             <Field label="TRN"><Input value={form.trn || ''} onChange={(e) => setForm({ ...form, trn: e.target.value })} /></Field>
             <Field label="Peppol ID"><Input value={form.peppol_id || ''} onChange={(e) => setForm({ ...form, peppol_id: e.target.value })} placeholder="0235:1006082182" /></Field>

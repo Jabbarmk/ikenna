@@ -2,17 +2,17 @@ import { useNavigate } from 'react-router-dom';
 import Icon from './Icon';
 import { NAV_MODULES } from '../navModules';
 
-export default function IconGrid({ badges = {} }) {
+export default function IconGrid({ badges = {}, modules = NAV_MODULES, onNavigate }) {
   const navigate = useNavigate();
 
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-      {NAV_MODULES.map((m) => {
+      {modules.map((m) => {
         const badge = badges[m.to];
         return (
           <button
             key={m.to}
-            onClick={() => navigate(m.to)}
+            onClick={() => { navigate(m.to); onNavigate?.(); }}
             className="group relative flex aspect-square min-h-[140px] flex-col items-center justify-center gap-3.5 rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md active:translate-y-0 active:shadow-sm"
           >
             {badge ? (

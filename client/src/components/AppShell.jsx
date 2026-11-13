@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
 import { NAV_MODULES, moduleTitleForPath } from '../navModules';
 import Icon from './Icon';
+import BottomTabBar from './BottomTabBar';
 
 export default function AppShell() {
   const { user, logout } = useAuth();
@@ -9,6 +12,11 @@ export default function AppShell() {
   const location = useLocation();
   const isHome = location.pathname === '/';
   const title = moduleTitleForPath(location.pathname);
+  const [logo, setLogo] = useState(null);
+
+  useEffect(() => {
+    api.get('/settings').then((s) => setLogo(s?.logo || null)).catch(() => {});
+  }, []);
 
   function handleLogout() {
     logout();
@@ -28,6 +36,9 @@ export default function AppShell() {
               >
                 <Icon name="home" className="h-7 w-7" />
               </button>
+            )}
+            {logo && (
+              <img src={logo} alt="Company logo" className="hidden h-11 w-11 flex-shrink-0 rounded-lg object-contain sm:block" />
             )}
             <div>
               <div className="text-lg font-bold leading-tight text-slate-900 sm:text-xl">{title}</div>
@@ -53,7 +64,7 @@ export default function AppShell() {
           </div>
         </div>
 
-        <nav className="mx-auto flex max-w-[1800px] gap-1.5 overflow-x-auto px-3 pb-3 sm:px-6 lg:px-8">
+        <nav className="mx-auto hidden max-w-[1800px] gap-1.5 overflow-x-auto px-3 pb-3 sm:px-6 lg:flex lg:px-8">
           <button
             onClick={() => navigate('/')}
             className={`flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
@@ -79,9 +90,11 @@ export default function AppShell() {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-[1800px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <main className="mx-auto w-full max-w-[1800px] px-4 py-6 pb-24 sm:px-6 sm:py-8 lg:px-8 lg:pb-8">
         <Outlet />
       </main>
+
+      <BottomTabBar />
     </div>
   );
 }
