@@ -32,6 +32,17 @@ CREATE TABLE IF NOT EXISTS company_settings (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+-- ===================== TERMS & CONDITIONS TEMPLATES =====================
+CREATE TABLE IF NOT EXISTS terms_templates (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  applies_to ENUM('quotation','invoice','both') NOT NULL DEFAULT 'both',
+  body TEXT NOT NULL,
+  is_default TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
 -- ===================== LEADS =====================
 CREATE TABLE IF NOT EXISTS leads (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -125,10 +136,13 @@ CREATE TABLE IF NOT EXISTS quotations (
   vat_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
   total DECIMAL(14,2) NOT NULL DEFAULT 0,
   notes TEXT,
+  terms_template_id INT NULL,
+  terms_text TEXT,
   created_by INT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (client_id) REFERENCES clients(id),
+  FOREIGN KEY (terms_template_id) REFERENCES terms_templates(id) ON DELETE SET NULL,
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
@@ -188,11 +202,14 @@ CREATE TABLE IF NOT EXISTS sales_invoices (
   paid_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
   status ENUM('unpaid','partial','paid','cancelled') NOT NULL DEFAULT 'unpaid',
   notes TEXT,
+  terms_template_id INT NULL,
+  terms_text TEXT,
   created_by INT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (client_id) REFERENCES clients(id),
   FOREIGN KEY (quotation_id) REFERENCES quotations(id) ON DELETE SET NULL,
+  FOREIGN KEY (terms_template_id) REFERENCES terms_templates(id) ON DELETE SET NULL,
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 

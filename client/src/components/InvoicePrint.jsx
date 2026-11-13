@@ -1,6 +1,6 @@
 import { money, formatDate } from '../utils/format';
 
-export default function InvoicePrint({ settings, docType, docNo, docDate, party, items, subtotal, vatAmount, total, vatRate = 5, extraNote }) {
+export default function InvoicePrint({ settings, docType, docNo, docDate, party, items, subtotal, vatAmount, total, vatRate = 5, extraNote, termsText }) {
   return (
     <div className="invoice-print">
       <div className="invoice-header">
@@ -58,6 +58,13 @@ export default function InvoicePrint({ settings, docType, docNo, docDate, party,
       </div>
 
       {extraNote && <div className="invoice-note">{extraNote}</div>}
+
+      {termsText && (
+        <div className="invoice-terms">
+          <div className="invoice-terms-title">Terms &amp; Conditions</div>
+          <div className="invoice-terms-body">{termsText}</div>
+        </div>
+      )}
 
       <div className="invoice-signatures">
         <div>Receiver's Sign: ______________________</div>

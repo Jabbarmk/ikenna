@@ -6,6 +6,7 @@ import ClientSearchInput from '../components/ClientSearchInput';
 import LineItemsEditor from '../components/LineItemsEditor';
 import InvoicePrint from '../components/InvoicePrint';
 import Modal from '../components/Modal';
+import TermsPicker from '../components/TermsPicker';
 import { Button, Checkbox, Field, FormGrid, Input, ModalActions, Panel, Select, Textarea } from '../components/ui';
 import { useToast } from '../context/ToastContext';
 import { today, money, formatDate } from '../utils/format';
@@ -23,6 +24,8 @@ export default function SalesForm() {
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState([{ ...EMPTY_ITEM }]);
   const [allowNegative, setAllowNegative] = useState(false);
+  const [termsTemplateId, setTermsTemplateId] = useState(null);
+  const [termsText, setTermsText] = useState('');
   const [existing, setExisting] = useState(null);
   const [settings, setSettings] = useState(null);
   const [payModalOpen, setPayModalOpen] = useState(false);
@@ -51,6 +54,7 @@ export default function SalesForm() {
     try {
       const res = await api.post('/sales', {
         client_id: client.id, invoice_date: invoiceDate, notes, items: validItems, allow_negative_stock: allowNegative,
+        terms_template_id: termsTemplateId, terms_text: termsText || null,
       });
       toast.success(`Invoice ${res.invoice_no} created`);
       navigate(`/sales/${res.id}`);
@@ -102,6 +106,13 @@ export default function SalesForm() {
                 <Checkbox label="Allow selling beyond available stock" checked={allowNegative} onChange={(e) => setAllowNegative(e.target.checked)} />
               </div>
               <Field label="Notes" full><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
+              <TermsPicker
+                appliesTo="invoice"
+                templateId={termsTemplateId}
+                text={termsText}
+                autoApplyDefault
+                onChange={({ terms_template_id, terms_text }) => { setTermsTemplateId(terms_template_id); setTermsText(terms_text); }}
+              />
             </FormGrid>
             <div className="mt-5">
               <LineItemsEditor items={items} onChange={setItems} />
@@ -145,6 +156,7 @@ export default function SalesForm() {
           subtotal={existing.subtotal}
           vatAmount={existing.vat_amount}
           total={existing.total}
+          termsText={existing.terms_text}
         />
       </Panel>
 

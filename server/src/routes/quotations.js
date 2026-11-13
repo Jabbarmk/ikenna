@@ -50,7 +50,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 router.post('/', asyncHandler(async (req, res) => {
-  const { client_id, quote_date, valid_until, notes, items, vat_rate } = req.body;
+  const { client_id, quote_date, valid_until, notes, items, vat_rate, terms_template_id, terms_text } = req.body;
   if (!client_id || !quote_date || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'client_id, quote_date and at least one item are required' });
   }
@@ -62,9 +62,9 @@ router.post('/', asyncHandler(async (req, res) => {
     await conn.beginTransaction();
     const quoteNo = await nextNumber(conn, 'QTN');
     const [result] = await conn.query(
-      `INSERT INTO quotations (quote_no, client_id, status, quote_date, valid_until, subtotal, vat_amount, total, notes, created_by)
-       VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?)`,
-      [quoteNo, client_id, quote_date, valid_until || null, subtotal, vat_amount, total, notes || null, req.user.id]
+      `INSERT INTO quotations (quote_no, client_id, status, quote_date, valid_until, subtotal, vat_amount, total, notes, terms_template_id, terms_text, created_by)
+       VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [quoteNo, client_id, quote_date, valid_until || null, subtotal, vat_amount, total, notes || null, terms_template_id || null, terms_text || null, req.user.id]
     );
     for (const it of items) {
       const lineTotal = Math.round(Number(it.qty) * Number(it.unit_price) * 100) / 100;
@@ -92,7 +92,7 @@ router.put('/:id/status', asyncHandler(async (req, res) => {
 }));
 
 router.put('/:id', asyncHandler(async (req, res) => {
-  const { client_id, quote_date, valid_until, notes, items, vat_rate } = req.body;
+  const { client_id, quote_date, valid_until, notes, items, vat_rate, terms_template_id, terms_text } = req.body;
   if (!client_id || !quote_date || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'client_id, quote_date and at least one item are required' });
   }
@@ -103,8 +103,8 @@ router.put('/:id', asyncHandler(async (req, res) => {
   try {
     await conn.beginTransaction();
     await conn.query(
-      `UPDATE quotations SET client_id=?, quote_date=?, valid_until=?, subtotal=?, vat_amount=?, total=?, notes=? WHERE id=?`,
-      [client_id, quote_date, valid_until || null, subtotal, vat_amount, total, notes || null, req.params.id]
+      `UPDATE quotations SET client_id=?, quote_date=?, valid_until=?, subtotal=?, vat_amount=?, total=?, notes=?, terms_template_id=?, terms_text=? WHERE id=?`,
+      [client_id, quote_date, valid_until || null, subtotal, vat_amount, total, notes || null, terms_template_id || null, terms_text || null, req.params.id]
     );
     await conn.query('DELETE FROM quotation_items WHERE quotation_id = ?', [req.params.id]);
     for (const it of items) {
@@ -139,9 +139,9 @@ router.post('/:id/convert-to-invoice', asyncHandler(async (req, res) => {
     const invoiceNo = await nextNumber(conn, 'INV');
     const invoiceDate = req.body.invoice_date || new Date().toISOString().slice(0, 10);
     const [invResult] = await conn.query(
-      `INSERT INTO sales_invoices (invoice_no, client_id, quotation_id, invoice_date, subtotal, vat_amount, total, status, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid', ?)`,
-      [invoiceNo, quote.client_id, quote.id, invoiceDate, quote.subtotal, quote.vat_amount, quote.total, req.user.id]
+      `INSERT INTO sales_invoices (invoice_no, client_id, quotation_id, invoice_date, subtotal, vat_amount, total, status, terms_template_id, terms_text, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?)`,
+      [invoiceNo, quote.client_id, quote.id, invoiceDate, quote.subtotal, quote.vat_amount, quote.total, quote.terms_template_id, quote.terms_text, req.user.id]
     );
 
     for (const it of items) {

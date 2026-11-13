@@ -5,6 +5,7 @@ import PageHeader from '../components/PageHeader';
 import ClientSearchInput from '../components/ClientSearchInput';
 import LineItemsEditor from '../components/LineItemsEditor';
 import InvoicePrint from '../components/InvoicePrint';
+import TermsPicker from '../components/TermsPicker';
 import Icon from '../components/Icon';
 import { Badge, Button, Field, FormGrid, Input, Panel, Select, Textarea } from '../components/ui';
 import { useToast } from '../context/ToastContext';
@@ -24,6 +25,8 @@ export default function QuotationForm() {
   const [validUntil, setValidUntil] = useState('');
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState([{ ...EMPTY_ITEM }]);
+  const [termsTemplateId, setTermsTemplateId] = useState(null);
+  const [termsText, setTermsText] = useState('');
   const [existing, setExisting] = useState(null);
   const [settings, setSettings] = useState(null);
   const [editMode, setEditMode] = useState(isNew);
@@ -38,6 +41,8 @@ export default function QuotationForm() {
     setValidUntil(data.valid_until ? data.valid_until.slice(0, 10) : '');
     setNotes(data.notes || '');
     setItems(data.items.map((it) => ({ product_id: it.product_id, description: it.description, qty: it.qty, unit_price: it.unit_price })));
+    setTermsTemplateId(data.terms_template_id || null);
+    setTermsText(data.terms_text || '');
   }
 
   async function loadExisting() {
@@ -57,7 +62,10 @@ export default function QuotationForm() {
     if (validItems.length === 0) return toast.error('Add at least one valid line item');
 
     try {
-      const payload = { client_id: client.id, quote_date: quoteDate, valid_until: validUntil || null, notes, items: validItems };
+      const payload = {
+        client_id: client.id, quote_date: quoteDate, valid_until: validUntil || null, notes, items: validItems,
+        terms_template_id: termsTemplateId, terms_text: termsText || null,
+      };
       if (isNew) {
         const res = await api.post('/quotations', payload);
         toast.success(`Quotation ${res.quote_no} created`);
@@ -116,6 +124,13 @@ export default function QuotationForm() {
               <Field label="Quote Date *"><Input type="date" required value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} /></Field>
               <Field label="Valid Until"><Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></Field>
               <Field label="Notes" full><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
+              <TermsPicker
+                appliesTo="quotation"
+                templateId={termsTemplateId}
+                text={termsText}
+                autoApplyDefault
+                onChange={({ terms_template_id, terms_text }) => { setTermsTemplateId(terms_template_id); setTermsText(terms_text); }}
+              />
             </FormGrid>
 
             <div className="mt-5">
@@ -150,6 +165,12 @@ export default function QuotationForm() {
               <Field label="Quote Date *"><Input type="date" required value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} /></Field>
               <Field label="Valid Until"><Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></Field>
               <Field label="Notes" full><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
+              <TermsPicker
+                appliesTo="quotation"
+                templateId={termsTemplateId}
+                text={termsText}
+                onChange={({ terms_template_id, terms_text }) => { setTermsTemplateId(terms_template_id); setTermsText(terms_text); }}
+              />
             </FormGrid>
 
             <div className="mt-5">
@@ -224,6 +245,7 @@ export default function QuotationForm() {
           vatAmount={existing.vat_amount}
           total={existing.total}
           extraNote={existing.valid_until ? `Valid until: ${formatDate(existing.valid_until)}` : undefined}
+          termsText={existing.terms_text}
         />
       </Panel>
     </div>

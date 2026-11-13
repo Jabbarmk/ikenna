@@ -58,7 +58,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 router.post('/', asyncHandler(async (req, res) => {
-  const { client_id, invoice_date, notes, items, vat_rate, allow_negative_stock } = req.body;
+  const { client_id, invoice_date, notes, items, vat_rate, allow_negative_stock, terms_template_id, terms_text } = req.body;
   if (!client_id || !invoice_date || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'client_id, invoice_date and at least one item are required' });
   }
@@ -82,9 +82,9 @@ router.post('/', asyncHandler(async (req, res) => {
 
     const invoiceNo = await nextNumber(conn, 'INV');
     const [result] = await conn.query(
-      `INSERT INTO sales_invoices (invoice_no, client_id, invoice_date, subtotal, vat_amount, total, status, notes, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, 'unpaid', ?, ?)`,
-      [invoiceNo, client_id, invoice_date, subtotal, vat_amount, total, notes || null, req.user.id]
+      `INSERT INTO sales_invoices (invoice_no, client_id, invoice_date, subtotal, vat_amount, total, status, notes, terms_template_id, terms_text, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, 'unpaid', ?, ?, ?, ?)`,
+      [invoiceNo, client_id, invoice_date, subtotal, vat_amount, total, notes || null, terms_template_id || null, terms_text || null, req.user.id]
     );
 
     for (const it of items) {

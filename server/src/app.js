@@ -14,6 +14,7 @@ const returnRoutes = require('./routes/returns');
 const accountRoutes = require('./routes/accounts');
 const reportRoutes = require('./routes/reports');
 const settingsRoutes = require('./routes/settings');
+const termsRoutes = require('./routes/terms');
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/returns', returnRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/terms-templates', termsRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 app.use(errorHandler);
