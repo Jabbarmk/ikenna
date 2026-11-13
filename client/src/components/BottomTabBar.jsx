@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Icon from './Icon';
 import MoreSheet from './MoreSheet';
@@ -8,10 +8,40 @@ const PRIMARY_PATHS = ['/sales', '/quotations', '/stock'];
 const PRIMARY_MODULES = PRIMARY_PATHS.map((to) => NAV_MODULES.find((m) => m.to === to)).filter(Boolean);
 const OVERFLOW_MODULES = NAV_MODULES.filter((m) => !PRIMARY_PATHS.includes(m.to));
 
+const SCROLL_THRESHOLD = 8;
+
+function useHideOnScrollDown() {
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
+
+  useEffect(() => {
+    function onScroll() {
+      const y = window.scrollY;
+      const diff = y - lastY.current;
+
+      if (y <= 0) {
+        setHidden(false);
+      } else if (diff > SCROLL_THRESHOLD) {
+        setHidden(true);
+        lastY.current = y;
+      } else if (diff < -SCROLL_THRESHOLD) {
+        setHidden(false);
+        lastY.current = y;
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return hidden;
+}
+
 export default function BottomTabBar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
+  const hidden = useHideOnScrollDown();
 
   const isHome = location.pathname === '/';
   const isMoreActive = OVERFLOW_MODULES.some((m) => location.pathname === m.to || location.pathname.startsWith(`${m.to}/`));
@@ -28,7 +58,11 @@ export default function BottomTabBar() {
 
   return (
     <>
-      <nav className="no-print fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden">
+      <nav
+        className={`no-print fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white/95 backdrop-blur transition-transform duration-300 lg:hidden ${
+          hidden ? 'translate-y-full' : 'translate-y-0'
+        }`}
+      >
         {tabs.map((tab) => (
           <button
             key={tab.to}
